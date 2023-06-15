@@ -1,8 +1,5 @@
 .DS_Store
 __pycache__
-test_parse.py
-test_token.py
-post_example.electric
 drafts
 posts
 config.json
