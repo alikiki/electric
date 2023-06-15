@@ -16,7 +16,7 @@ The main way to use `electric` is with the following syntax: `@operation{arg1||a
 
 Do you want a good feedback loop in your blogging workflow? Running `python main.py` builds the files in real-time, allowing you to get instant feedback about how your writing looks on the webpage itself. 
 
-Similar to the language, `electric` the site generator has almost no dependencies, other than [https://github.com/gorakhargosh/watchdog/](watchdog). Just `pip install watchdog`, and you're good to go. 
+Similar to the language, `electric` the site generator has almost no dependencies, other than [watchdog](https://github.com/gorakhargosh/watchdog/). Just `pip install watchdog`, and you're good to go. 
 
 
 
