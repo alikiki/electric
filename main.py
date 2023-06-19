@@ -52,37 +52,40 @@ class Post:
         if self.title is None:
             raise ValueError("must build the post first!")
         print(f"Publishing {self.source}.....", end="", flush=True)
-        with open(self.target, "w") as f:
+        with open(self.target, "w+") as f:
             f.write(self.post)
         print("complete")
 
 class MyHandler(FileSystemEventHandler):
     def on_any_event(self, _):
-        posts = []
+        try:
+            posts = []
+            for file in os.listdir(CONFIG["source_post_dir"]):
+                if file.endswith(".electric"):
+                    src_path = os.path.join(CONFIG["source_post_dir"], file)
+                    trg_path = os.path.join(
+                        CONFIG["target_post_dir"], os.path.splitext(file)[0] + ".html")
+                    p = Post(
+                        CONFIG["post_template"],
+                        src_path,
+                        trg_path
+                    )
+                    p.build()
+                    p.publish()
+                    posts.append(p)
 
-        # building posts
-        for file in os.listdir(CONFIG["source_post_dir"]):
-            src_path = os.path.join(CONFIG["source_post_dir"], file)
-            trg_path = os.path.join(
-                CONFIG["target_post_dir"], os.path.splitext(file)[0] + ".html")
-            p = Post(
-                CONFIG["post_template"],
-                src_path,
-                trg_path
-            )
-            p.build()
-            p.publish()
-            posts.append(p)
-
-        # make post lists
-        print(f"Build post list.....", end="", flush=True)
-        with open(CONFIG["post_index_template"], "r") as f:
-            template = f.read()
-            titles = ''.join([post.get_link() for post in posts])
-            html = re.sub(r'\|\|post-list\|\|', titles, template)
-            with open(CONFIG["post_index"], "w") as index:
-                index.write(html)
-        print("complete.")
+            # make post lists
+            print(f"Build post list.....", end="", flush=True)
+            with open(CONFIG["post_index_template"], "r") as f:
+                template = f.read()
+                titles = ''.join([post.get_link() for post in posts])
+                html = re.sub(r'\|\|post-list\|\|', titles, template)
+                with open(CONFIG["post_index"], "w") as index:
+                    index.write(html)
+            print("complete.")
+        except Exception as e:
+            print("FAIL.")
+            print(f"Error: {e}")
 
 
 def watch_directory(path):

@@ -1,0 +1,7 @@
+{
+    "post_template": "/Users/hwjeon/Documents/WRITINGS/current/templates/post_template.html",
+    "post_index_template": "/Users/hwjeon/Documents/WRITINGS/current/templates/post_index_template.html",
+    "source_post_dir": "/Users/hwjeon/Documents/WRITINGS/current/writings/",
+    "target_post_dir": "/Users/hwjeon/Documents/WRITINGS/current/posts/post-content",
+    "post_index": "/Users/hwjeon/Documents/WRITINGS/current/posts/index.html"
+}
