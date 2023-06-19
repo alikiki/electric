@@ -18,7 +18,36 @@ Do you want a good feedback loop in your blogging workflow? Running `python main
 
 Similar to the language, `electric` the site generator has almost no dependencies, other than [watchdog](https://github.com/gorakhargosh/watchdog/). Just `pip install watchdog`, and you're good to go. 
 
+### Command line tool
 
+There are three commands for the command line tool: `electric help, electric shock, electric new <post_name> [-single | -multiple]`. `electric help` gives you exactly what you want: help. `electric shock` does the same thing as what other static site generators do: building the source. I just wanted to have fun with the name. 
 
+`electric new <args>` sets up a new `electric` project. Doing `electric new <project_name> -single` generates the file structure below. The `-single` tag sets up a disposable single page document:
 
+```
+lib/
+├─ templates/
+│  ├─ post_template.html
+├─ new.electric
+posts/
+├─ index.html
+├─ index.css
+config.json
+```
 
+`electric new <project_name> -multiple` generates the file structure below. The `-multiple` tag sets up a multi-page website:
+
+```
+lib/
+├─ templates/
+│  ├─ post_template.html
+│  ├─ post_index_template.html
+├─ posts/
+│  ├─ new.electric
+posts/
+├─ index.html
+├─ index.css
+├─ post-content/
+│  ├─ new.html
+config.json
+```
