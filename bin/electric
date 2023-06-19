@@ -1,0 +1,195 @@
+#!/usr/local/opt/python/libexec/bin/python
+
+import argparse
+import os
+import subprocess
+
+import re
+import os
+from lang.program import Program
+from lang.utils import get_title, separate
+
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+
+class Post:
+    def __init__(self, template, source, target):
+        self.template = template
+        self.source = source
+        self.target = target
+
+        self.title = None
+        self.post = None
+
+    def build(self):
+        print(f"Building {self.source}.....", end="", flush=True)
+        with open(self.source, "r") as source_f:
+            text = source_f.read()
+            head, body, offset = separate(text)
+            head, body = Program(head), Program(body, offset)
+            head_html, body_html = head.eval(), body.eval()
+            self.title = get_title(head.get_ast())
+            with open(self.template, "r") as template_f:
+                template = template_f.read()
+                html = re.sub(r'\|\|head\|\|', head_html, template)
+                html = re.sub(r'\|\|body\|\|', body_html, html)
+
+                self.post = html
+        print("complete.")
+
+    def get_link(self):
+        if self.title is None:
+            raise ValueError("must build the post first!")
+        relative_path = f"post-content/{os.path.basename(os.path.dirname(self.target))}/{os.path.basename(self.target)}"
+
+        return f"<li><a href=\"{relative_path}\">{self.title}</a></li>"
+
+    def publish(self):
+        if self.title is None:
+            raise ValueError("must build the post first!")
+        print(f"Publishing {self.source}.....", end="", flush=True)
+        with open(self.target, "w+") as f:
+            f.write(self.post)
+        print("complete")
+
+
+class ElectricShocker(FileSystemEventHandler):
+    def on_any_event(self, _):
+        try:
+            if os.path.exists("./lib/posts") and os.path.isdir("./lib/posts"):
+                posts = []
+                for file in os.listdir("./lib/posts/"):
+                    if file.endswith(".electric"):
+                        temp_path = "./lib/templates/post_template.html"
+                        src_path = os.path.join(
+                            "./lib/posts", file)
+                        trg_path = os.path.join(
+                            "./posts/post-content", os.path.splitext(file)[0] + ".html")
+                        p = Post(
+                            temp_path,
+                            src_path,
+                            trg_path
+                        )
+                        p.build()
+                        p.publish()
+                        posts.append(p)
+
+                print(f"Build post list.....", end="", flush=True)
+                with open("./lib/templates/post_index_template.html", "r") as f:
+                    template = f.read()
+                    titles = ''.join([post.get_link() for post in posts])
+                    html = re.sub(r'\|\|post-list\|\|', titles, template)
+                    with open("./posts/index.html", "w") as index:
+                        index.write(html)
+                print("complete.")
+            elif os.path.exists("./lib/new.electric"):
+                temp_path = "./lib/templates/post_template.html"
+                src_path = "./lib/new.electric"
+                trg_path = "./posts/index.html"
+                p = Post(
+                    temp_path,
+                    src_path,
+                    trg_path
+                )
+                p.build()
+                p.publish()
+            else:
+                raise Exception("Error: no posts folder found!")
+
+        except Exception as e:
+            print("FAIL.")
+            print(f"Error: {e}")
+
+
+def watch_directory(path):
+    event_handler = ElectricShocker()
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+    print(f"Watching directory: {path}")
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+
+    observer.join()
+
+
+def create_new_post(args, single=True):
+    post_name = args.post_name
+
+    if os.path.exists(post_name):
+        print(f'Error: The directory "{post_name}" already exists.')
+        return
+
+    os.mkdir(post_name)
+    print(f'Created directory "{post_name}".')
+
+    dest_dir = os.path.join(os.getcwd(), post_name)
+
+    if single:
+        source_dir = '/Users/hwjeon/Documents/PROJECTS/electric/single_electric'
+        script_path = os.path.join(
+            "/Users/hwjeon/Documents/PROJECTS/electric/cli", "single.sh")
+        subprocess.run([script_path, source_dir, dest_dir])
+    else:
+        source_dir = '/Users/hwjeon/Documents/PROJECTS/electric/multiple_electric'
+        script_path = os.path.join(
+            "/Users/hwjeon/Documents/PROJECTS/electric/cli", "multiple.sh")
+        subprocess.run([script_path, source_dir, dest_dir])
+
+    print('...Initialized electric.')
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description='Electric Static Site Generator')
+
+    subparsers = parser.add_subparsers(dest='command')
+
+    new_parser = subparsers.add_parser(
+        'new', help='Create a new Electric directory')
+    new_parser.add_argument('-single', action='store_true',
+                            help='Create a single Electric document')
+    new_parser.add_argument('-multiple', action='store_true',
+                            help='Create an Electric project')
+    new_parser.add_argument(
+        'post_name', help='Name of the new Electric directory')
+
+    shock_parser = subparsers.add_parser(
+        "shock", help="Build the Electric project")
+
+    help_parser = subparsers.add_parser(
+        "help", help="Show help message")
+
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = parse_arguments()
+
+    if args.command == 'new':
+        if args.single:
+            create_new_post(args, single=True)
+        elif args.multiple:
+            create_new_post(args, single=False)
+        else:
+            print(
+                'Error: Invalid command. Please specify either the "-single" or "-multiple" option.')
+
+    elif args.command == 'shock':
+        watch_directory(os.path.join(os.getcwd(), "lib"))
+
+    elif args.command == 'help':
+        print('Usage: electric <command> [<args>]')
+        print('Commands:')
+        print('  new <post_name> [-single | -multiple]')
+        print('  shock')
+        print('  help')
+
+    else:
+        print('Enter new, shock, or help.')
